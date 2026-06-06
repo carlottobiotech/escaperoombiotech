@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escape Room: Missão Biotech - O Laboratório</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #e2e8f0;
+            --accent-color: #06b6d4;
+            --box-bg: #1e293b;
+            --error-color: #ef4444;
+            --success-color: #10b981;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            background-image: radial-gradient(circle at top right, #164e63 0%, transparent 40%);
+        }
+
+        .game-container {
+            background-color: var(--box-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            max-width: 650px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            border: 1px solid #334155;
+        }
+
+        #timer-display {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--box-bg);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid var(--accent-color);
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-color);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            z-index: 1000;
+            transition: color 0.3s, border-color 0.3s;
+            font-family: monospace;
+        }
+
+        #timer-display.hidden {
+            display: none;
+        }
+
+        #timer-display.danger {
+            color: var(--error-color);
+            border-color: var(--error-color);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        h1 {
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        h2 {
+            color: #94a3b8;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 1.05rem;
+        }
+
+        .credits-box {
+            background-color: #0f172a;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid #334155;
+            text-align: left;
+        }
+
+        .credits-box p {
+            margin-bottom: 10px;
+        }
+
+        .clue-box {
+            background-color: #0f172a;
+            padding: 18px;
+            border-left: 4px solid var(--accent-color);
+            margin-bottom: 25px;
+            font-style: italic;
+            text-align: left;
+            border-radius: 0 8px 8px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        input[type="text"] {
+            width: 80%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #334155;
+            border-radius: 6px;
+            background-color: #0f172a;
+            color: var(--accent-color);
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: #0f172a;
+            font-weight: bold;
+            border: none;
+            padding: 14px 28px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background-color: #22d3ee;
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .error-msg {
+            color: var(--error-color);
+            font-size: 14px;
+            font-weight: bold;
+            display: none;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        ul {
+            text-align: left;
+            margin-bottom: 25px;
+            background: #0f172a;
+            padding: 20px 20px 20px 40px;
+            border-radius: 8px;
+        }
+        
+        li {
+            margin-bottom: 10px;
+        }
+
+        #game-over h1 {
+            color: var(--error-color);
+            font-size: 40px;
+        }
+        
+        #success h1 {
+            color: var(--success-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="timer-display" class="hidden">15:00</div>
+
+    <div class="game-container">
+
+        <div id="credits" class="step active">
+            <h1>Escape Room Biotech</h1>
+            
+            <div class="credits-box">
+                <p><strong>Extensão:</strong> BIO12029 - Desenvolvimento de Projetos e Produtos Biotecnológicos</p>
+                <p><strong>Professora Responsável:</strong> Karina Monteiro</p>
+                <p><strong>Alunos Envolvidos:</strong> Arthur Borges Fernandes, João Victor Castanheira Tavares, Lucas Alfeu Carlotto e Lucas dos Santos Linares</p>
+            </div>
+            
+            <button onclick="startIntro()">Iniciar o Jogo</button>
+        </div>
+        
+        <div id="intro" class="step">
+            <h1>Operação Biotech</h1>
+            <h2>Protocolo de Abertura Comercial</h2>
+            <p>Vocês são cientistas prestes a lançar uma startup revolucionária. Um fundo de capital de risco aprovou um aporte milionário, mas impôs uma condição rigorosa.</p>
+            <p>Laboratórios lidam com vidas, patógenos e regulações federais severas. O investidor bloqueou os fundos em um contrato inteligente (Smart Contract). A tela do terminal mestre exibe a mensagem:</p>
+            <div class="clue-box">
+                "Não financiamos ideias não legalizadas. Para provar que seu laboratório pode operar legalmente no Brasil, insiram as chaves de liberação provando que dominam o processo de abertura, biossegurança e regulação."
+            </div>
+            <p><strong>Vocês têm apenas 15 minutos.</strong> Se o tempo esgotar, o contrato expira e a patente será vendida para a concorrência.</p>
+            <button onclick="startGame()">Iniciar Protocolo (Ativar Cronômetro)</button>
+        </div>
+
+        <div id="step1" class="step">
+            <h1>Fase 1: O Objeto Social</h1>
+            <p>O primeiro passo para abrir a empresa é definir o foco de atuação no Contrato Social. Sobre a bancada, há anotações do pesquisador-chefe:</p>
+            <p><em>"Nosso laboratório desenvolverá soluções inovadoras manipulando sistemas biológicos e organismos vivos para criar novos produtos e tecnologias."</em></p>
+            <p>Um anagrama com 13 letras bloqueia a gaveta de documentos:</p>
+            <h2>C I O L O G I T E B O N A</h2>
+            <div class="clue-box">
+                Pista: "O negócio de vocês está fundamentado na grande área descrita pelas letras acima, que une a vida e a inovação técnica. Qual é a palavra?"
+            </div>
+            <input type="text" id="input1" placeholder="Qual a área de estudo?">
+            <div id="error1" class="error-msg">Palavra incorreta. Pense na união entre biologia e tecnologia!</div>
+            <br>
+            <button onclick="checkAnswer('input1', 'BIOTECNOLOGIA', 'step1', 'step2', 'error1')">Confirmar Objeto Social</button>
+        </div>
+
+        <div id="step2" class="step">
+            <h1>Fase 2: A Biossegurança</h1>
+            <p>A gaveta abre, revelando a planta arquitetônica do laboratório. Diferente de uma empresa comum, o projeto físico de vocês exige uma classificação de risco rigorosa.</p>
+            <p>No manual da CTNBio (Comissão Técnica Nacional de Biossegurança), vocês leem as regras globais:</p>
+            <ul>
+                <li><strong>NB-1:</strong> Risco baixo (ex: leveduras comuns e bactérias não patogênicas).</li>
+                <li><strong>NB-2:</strong> Risco moderado (ex: patógenos humanos não letais pelo ar, sangue).</li>
+                <li><strong>NB-3:</strong> Risco alto (ex: vírus transmissíveis pelo ar, como tuberculose).</li>
+                <li><strong>NB-4:</strong> Risco máximo (ex: vírus exóticos e letais, como ebola).</li>
+            </ul>
+            <div class="clue-box" id="clue-step2">
+                </div>
+            <input type="text" id="input2" placeholder="Ex: NBX" maxlength="3">
+            <div id="error2" class="error-msg">Nível incorreto. Leia a classificação e avalie o risco do nosso projeto!</div>
+            <br>
+            <button id="btn-step2">Aprovar Planta</button>
+        </div>
+
+        <div id="step3" class="step">
+            <h1>Fase 3: A Burocracia Sequencial</h1>
+            <p>A planta do laboratório foi validada pelo sistema. Agora, a inteligência artificial do governo pede a ordem exata de registro exigida para o <strong>seu nível específico de biossegurança</strong>.</p>
+            <p>Quatro órgãos exigem registro, e cada um tem um código de pasta:</p>
+            <ul>
+                <li>Junta Comercial / Receita Federal (Abertura do CNPJ) ➔ <strong>10</strong></li>
+                <li>Prefeitura (Alvará de Funcionamento Físico) ➔ <strong>20</strong></li>
+                <li>Vigilância Sanitária Local (Licença Sanitária) ➔ <strong>30</strong></li>
+                <li>CTNBio (Certificado de Qualidade em Biossegurança - CQB) ➔ <strong>40</strong></li>
+            </ul>
+            <div class="clue-box" id="clue-step3">
+                </div>
+            <input type="text" id="input3" placeholder="Digite a sequência (8 dígitos)" maxlength="8">
+            <div id="error3" class="error-msg">Ordem negada pelos órgãos de regulação. Releia a pista e reorganize!</div>
+            <br>
+            <button id="btn-step3">Submeter Processos</button>
+        </div>
+
+        <div id="step4" class="step">
+            <h1>Fase 4: A Agência Máxima</h1>
+            <p>A documentação estrutural foi validada! Mas o terminal bloqueia novamente. Um aviso vermelho pisca na tela:</p>
+            <p><em>"Aviso: Laboratórios que realizam pesquisas clínicas e diagnósticos in vitro necessitam de registro federal e adequação à RDC 786/2023."</em></p>
+            <div class="clue-box">
+                Pista: "Quem é a agência federal brasileira responsável por regular, controlar e fiscalizar medicamentos, equipamentos médicos e laboratórios de análises?"
+            </div>
+            <input type="text" id="input4" placeholder="SIGLA DA AGÊNCIA" maxlength="6">
+            <div id="error4" class="error-msg">Sigla incorreta. Pense na agência nacional de saúde.</div>
+            <br>
+            <button onclick="checkAnswer('input4', 'ANVISA', 'step4', 'step5', 'error4')">Solicitar Autorização</button>
+        </div>
+
+        <div id="step5" class="step">
+            <h1>Fase 5: O Smart Contract</h1>
+            <p>O terminal da Agência aprovou o laboratório. Uma interface verde surge na tela. Vocês estão a um passo de receber os fundos.</p>
+            <p>O firewall do investidor exige a assinatura criptográfica final baseada na jornada de vocês:</p>
+            <ul>
+                <li>Módulo 1: O Foco Científico</li>
+                <li>Módulo 2: O Nível de Biossegurança</li>
+                <li>Módulo 3: A Ordem Regulatória</li>
+                <li>Módulo 4: A Agência Federal</li>
+            </ul>
+            <div class="clue-box">
+                Pista final: "A chave é simples. A vida, a ciência e a lei seguem uma ordem lógica. Insiram os números que representam a progressão natural das 4 fases que vocês acabaram de superar."
+            </div>
+            <p>O sistema pede uma senha de 4 dígitos:</p>
+            <input type="text" id="input5" placeholder="****" maxlength="4">
+            <div id="error5" class="error-msg">Senha incorreta. Qual foi a sequência das fases?</div>
+            <br>
+            <button onclick="checkAnswer('input5', '1234', 'step5', 'success', 'error5')">Desbloquear Investimento</button>
+        </div>
+
+        <div id="success" class="step">
+            <h1>🧬 SUCESSO CIENTÍFICO 🧬</h1>
+            <h2>Laboratório Legalizado e Financiado!</h2>
+            <p>A tela brilha intensamente. Uma notificação no celular aponta: <strong>R$ 5.000.000,00 transferidos para a conta jurídica.</strong></p>
+            <div class="clue-box">
+                "Vocês demonstraram conhecimento profundo não só em ciência, mas nas exigências de infraestrutura, nas normas de biossegurança adaptadas ao seu projeto, nos trâmites burocráticos dinâmicos e na regulação rigorosa da ANVISA."
+            </div>
+            <p>A empresa está aberta. As pesquisas podem começar de forma ética, segura e legalizada. O mundo aguarda as suas descobertas!</p>
+            <button onclick="location.reload()">Reiniciar Simulação</button>
+        </div>
+
+        <div id="game-over" class="step">
+            <h1>☣️ TEMPO ESGOTADO ☣️</h1>
+            <h2>Fundo Revogado</h2>
+            <p>Os servidores do investidor desconectaram. O Smart Contract expirou devido à demora na validação burocrática e sanitária.</p>
+            <div class="clue-box">
+                "No mercado de biotecnologia, a falta de agilidade no processo de compliance e regulação pode custar a vida útil de uma pesquisa."
+            </div>
+            <p>A ideia científica era brilhante, mas a execução empresarial falhou. Volte aos estudos e tente novamente!</p>
+            <button onclick="location.reload()">Tentar Novamente</button>
+        </div>
+
+    </div>
+
+    <script>
+        // Variáveis do Cronômetro
+        let timeLeft = 15 * 60; // 15 minutos em segundos
+        let timerInterval;
+
+        // Bando de Dados de Cenários Aleatórios
+        const scenarios = [
+            { 
+                level: 'NB1', 
+                description: "Nossa empresa desenvolverá insumos a partir de leveduras comuns e probióticos básicos (risco baixo).",
+                bureaucracyClue: "Como o risco é baixo (NB-1), o processo é linear: Primeiro você cria a empresa juridicamente (CNPJ). Depois, consegue a liberação do espaço físico (Alvará). Com o espaço aprovado, pede a Licença Sanitária e, só com a operação rodando, institui a comissão interna para notificar a CTNBio (CQB).",
+                bureaucracyCode: "10203040"
+            },
+            { 
+                level: 'NB2', 
+                description: "Nossa empresa manipulará amostras de sangue humano e tecidos para testes genéticos locais (risco moderado).",
+                bureaucracyClue: "Para risco moderado (NB-2), a ordem é padrão: Nascemos no papel (CNPJ), obtemos a permissão de atuação da Prefeitura (Alvará), passamos pela aprovação higiênica da Vigilância Sanitária local e, por fim, certificamos os laboratórios na CTNBio (CQB).",
+                bureaucracyCode: "10203040"
+            },
+            { 
+                level: 'NB3', 
+                description: "Nossa empresa fará o sequenciamento de vírus respiratórios altamente infecciosos pelo ar para criação de vacinas (risco alto).",
+                bureaucracyClue: "ALERTA DE ALTO RISCO (NB-3)! Você não pode abrir as portas de um laboratório infeccioso sem aprovação prévia. Você deve criar a empresa (CNPJ), mas ANTES da Prefeitura e da Vigilância Sanitária chegarem perto, a CTNBio (CQB) precisa aprovar a contenção ambiental. Só depois a Sanitária e a Prefeitura emitem as licenças finais.",
+                bureaucracyCode: "10403020"
+            },
+            { 
+                level: 'NB4', 
+                description: "Nossa empresa trabalhará na contenção e estudo de vírus exóticos altamente letais, sem cura conhecida, como febres hemorrágicas (risco máximo).",
+                bureaucracyClue: "ALERTA DE RISCO MÁXIMO (NB-4)! Para segurança nacional, a Prefeitura jamais emitirá um Alvará sem garantias totais. Após abrir o CNPJ, a CTNBio (CQB) deve aprovar as plantas de contenção máxima, seguida pela Vigilância Sanitária Especial. O Alvará da Prefeitura é a última e definitiva etapa.",
+                bureaucracyCode: "10403020"
+            }
+        ];
+
+        // Função para iniciar a introdução
+        function startIntro() {
+            nextStep('credits', 'intro');
+        }
+
+        // Função para iniciar o jogo e o cronômetro
+        function startGame() {
+            // Sorteia o cenário
+            const randomIndex = Math.floor(Math.random() * scenarios.length);
+            const chosenScenario = scenarios[randomIndex];
+
+            // Atualiza Fase 2
+            document.getElementById('clue-step2').innerHTML = 
+                `Pista (Contrato do Investidor): "<em>${chosenScenario.description}</em>"<br><br>Digite o código alfanumérico do Nível de Biossegurança que devemos registrar no projeto arquitetônico para essa finalidade.`;
+            document.getElementById('btn-step2').setAttribute('onclick', `checkAnswer('input2', '${chosenScenario.level}', 'step2', 'step3', 'error2')`);
+
+            // Atualiza Fase 3
+            document.getElementById('clue-step3').innerHTML = 
+                `Pista: "${chosenScenario.bureaucracyClue}"`;
+            document.getElementById('btn-step3').setAttribute('onclick', `checkAnswer('input3', '${chosenScenario.bureaucracyCode}', 'step3', 'step4', 'error3')`);
+
+            // Muda de tela
+            nextStep('intro', 'step1');
+            
+            // Inicia Timer
+            const timerDisplay = document.getElementById('timer-display');
+            timerDisplay.classList.remove('hidden');
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                
+                timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 180 && timeLeft > 0) {
+                    timerDisplay.classList.add('danger');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerDisplay.innerText = "00:00";
+                    showGameOver();
+                }
+            }, 1000);
+        }
+
+        function nextStep(current, next) {
+            document.getElementById(current).classList.remove('active');
+            document.getElementById(next).classList.add('active');
+            
+            const inputs = document.querySelectorAll('input[type="text"]');
+            inputs.forEach(input => input.value = '');
+        }
+
+        function showGameOver() {
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('active');
+            });
+            document.getElementById('game-over').classList.add('active');
+            document.getElementById('timer-display').classList.add('hidden');
+        }
+
+        function removeAccents(str) {
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+
+        function checkAnswer(inputId, correctAnswer, currentStep, nextStepId, errorId) {
+            let userAnswer = document.getElementById(inputId).value.trim();
+            userAnswer = removeAccents(userAnswer).toUpperCase();
+            
+            const errorMsg = document.getElementById(errorId);
+
+            if (userAnswer === correctAnswer) {
+                errorMsg.style.display = 'none';
+                
+                if(nextStepId === 'success') {
+                    clearInterval(timerInterval);
+                    document.getElementById('timer-display').classList.add('hidden');
+                }
+
+                document.getElementById(currentStep).classList.remove('active');
+                document.getElementById(nextStepId).classList.add('active');
+            } else {
+                errorMsg.style.display = 'block';
+                const container = document.querySelector('.game-container');
+                container.style.transform = 'translateX(8px)';
+                setTimeout(() => container.style.transform = 'translateX(-8px)', 50);
+                setTimeout(() => container.style.transform = 'translateX(8px)', 100);
+                setTimeout(() => container.style.transform = 'translateX(0)', 150);
+            }
+        }
+    </script>
+</body>
+</html>
